@@ -1,184 +1,190 @@
-import React, { Component, useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import KartuProfil from './components/KartuProfil';
+import React, { useState, useEffect, use } from "react";
 
-// =========================================================
-// 1. CARA LAMA: CLASS COMPONENT (Panjang & Rumit)
-// =========================================================
-class TimerLama extends Component {
-  constructor(props) {
-    super(props);
-    // Setup State
-    this.state = { detik: 0 };
-  }
+ export default function App() {
+  const [kodeKelas, setKodeKelas] = useState('');
+  const [isHadir, setIsHadir] = useState(false);
+  const [waktuAbsen, setWaktuAbsen] = useState('');
+  const [jamRealtime, setJamRealtime] = useState('Memuat jam...');
 
-  // Lifecycle: Lahir (Mounting)
-  componentDidMount()  {
-    this.interval = setInterval(() => {
-      this.setState({ detik: this.state.detik + 1 });
-    }, 1000);
-  }
+  const studentData = {
+    nama: 'Dipras',
+    nim: '0920240005',
+    prodi: 'TRPL - Politeknik Astra',
+    };
 
-  // Lifecycle: Mati (Unmounting) - Cleanup!
-  componentWillUnmount()  {
-    clearInterval(this.interval);
-  }
+useEffect(() => {
+    console.log('[MOUNTING] Aplikasi dibuka (VIA USEEFFECT). jam menyala');
 
-  // Wajib ada fungsi render
-  render() {
+  const intervalJam = setInterval(() => {
+    const waktu = new Date(). toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setJamRealtime(waktu);
+  }, 1000);
+
+  return () => {
+    clearInterval(intervalJam);
+    console.log('[UNMOUNTING] Aplikasi ditutup (VIA USEEFFECT). jam dimatikan');
+  };
+}, []);
+
+useEffect(() => {
+ if (isHadir === true) {
+  console.log('[UPDATE] Sukses presensi pada pukul: ${waktuAbsen} (VIA USEEFFECT)');
+ }
+}, [isHadir, waktuAbsen]);
+
+ const handleAbsen = () => {
+    if (kodeKelas.trim() === '') {
+      alert('Masukkan kode kelas (Simulasi QR) terlebih dahulu');
+      return;
+    }
+
+    setIsHadir(true);
+    setWaktuAbsen(jamRealtime );
+  };
+
     return (
-      <View style={[styles.card, styles.cardOld]}>
-        <Text style={styles.cardTitle}>👴 Class Component</Text>
-        <Text style={styles.timerText}>{this.state.detik}</Text>
-        <Text style={styles.subtitle}>Menggunakan this.state & Lifecycle</Text>
-      </View>
-    );
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Sistem Presensi</Text>
+            <Text style={styles.clockText}>{jamRealtime}</Text>
+          </View>
+
+          <KartuProfil student={studentData}/>
+
+          <View style={styles.actionSection}>
+            {isHadir ? (
+              <View style={styles.successCard}>
+                <Image
+                  source={{ uri: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' }}
+                  style={styles.successIcon}
+                />
+                <Text style={styles.successText}>Presensi Berhasil!</Text>
+                <Text style={styles.timeText}>Tercatat pada: {waktuAbsen} WIB</Text>
+                <Text style={styles.codeText}>Kode Terverifikasi: {kodeKelas}</Text>
+              </View>
+            ) : (
+              <View style={styles.inputCard}>
+                <Text style={styles.instructionText}>Masukkan Kode Kelas:</Text>
+                <Text style={styles.noteText}>(Simulasi dari hasil Scan kode Kamera)</Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Contoh: TRPL-03"
+                  value={kodeKelas}
+                  onChangeText={setKodeKelas}
+                  autoCapitalize="characters"
+                />
+
+                <TouchableOpacity style={styles.buttonSubmit} onPress={ handleAbsen}>
+                  <Text style={styles.buttonText}>Konfirmasi Kehadiran</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+        </SafeAreaView>
+      </SafeAreaProvider>
+    ); 
   }
-}
 
-const TimerBaru = () => {
-  // Setup State dengan Hooks (1 baris!)
-  const [detik, setDetik] = useState(0);
-
-  // Lifecycle digabung dalam 1 fungsi Hooks!
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDetik((prevDetik) => prevDetik + 1); // Mengganti this.setState
-    }, 1000);
-
-    // Cleanup langsung ditaruh di sini
-    return () => clearInterval(interval);
-  }, []); // Array kosong = hanya jalan saat Mounting
-
-  return (
-    <View style={[styles.card, styles.cardNew]}>
-      <Text style={styles.cardTitle}>👶 Functional + Hooks</Text>
-      <Text style={styles.timerText}>{detik}</Text>
-      <Text style={styles.subtitle}>Hanya pakai useState & useEffect</Text>
-    </View>
-  );
-};
-
-// =========================================================
-// KOMPONEN UTAMA (Pengendali Demo)
-// =========================================================
-export default function App() {
-  const [tampilkanTimer, setTampilkanTimer] = useState(true);
-
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Battle of Components!</Text>
-
-        {/* Menampilkan kedua versi secara bersamaan */}
-        {tampilkanTimer ? (
-          <View style={styles.demoArea}>
-            <TimerLama />
-            <TimerBaru />
-          </View>
-        ) : (
-          <View style={styles.demoArea}>
-            <Text style={styles.infoText}>Semua Timer Dimatikan (Unmounted).</Text>
-            <Text style={styles.infoText}>Tidak ada Memory Leak!</Text>
-          </View>
-        )}
-
-        {/* Tombol untuk men-trigger Unmount/Mount */}
-        <TouchableOpacity
-          style={[styles.button, tampilkanTimer ? styles.btnStop : styles.btnStart]}
-          onPress={() => setTampilkanTimer(!tampilkanTimer)}
-        >
-          <Text style={styles.buttonText}>
-            {tampilkanTimer ? "Hancurkan Kedua Timer!" : "Lahirkan Kembali!"}
-          </Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    </SafeAreaProvider>
-  );
-}
-
-const styles = StyleSheet.create({
+ const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
-    alignItems: 'center',
-    paddingTop: 50,
+    backgroundColor: '#F4F6F9',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+  header: {
+    backgroundColor: '#0056A0',
+    paddingVertical: 20,
+    alignItems: 'center',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     marginBottom: 20,
   },
-  demoArea: {
-    width: '100%',
-    paddingHorizontal: 20,
-    minHeight: 350,
-    justifyContent: 'center',
-  },
-  card: {
-    padding: 20,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginBottom: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  cardOld: {
-    backgroundColor: '#FFE0B2', // Orange pucat (kesan jadul)
-    borderLeftWidth: 5,
-    borderLeftColor: '#F57C00',
-  },
-
-  cardNew: {
-    backgroundColor: '#C8E6C9', // Hijau segar (kesan modern)
-    borderLeftWidth: 5,
-    borderLeftColor: '#388E3C',
-  },
-  cardTitle: {
-    fontSize: 18,
+  headerTitle: {
+    color: '#fff',
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
   },
-  timerText: {
-    fontSize: 50,
-    fontWeight: '900',
-    color: '#222',
-    fontVariant: ['tabular-nums'],
-  },
-  subtitle: {
-    fontSize: 12,
-    color: '#666',
+  headerSubtitle: {
+    color: '#D1E8FF',
+    fontSize: 14,
     marginTop: 5,
+  },
+  actionSection: {
+    marginTop: 30,
+    marginHorizontal: 20,
+  },
+  inputCard: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  instructionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 5,
+  },
+  noteText: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 15,
     fontStyle: 'italic',
   },
-  infoText: {
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
     fontSize: 16,
-    textAlign: 'center',
-    color: '#555',
-    marginBottom: 10,
+    backgroundColor: '#FAFAFA',
+    marginBottom: 20,
+    color: '#333',
   },
-
-  button: {
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-    marginTop: 20,
-    width: '80%',
+  buttonSubmit: {
+    backgroundColor: '#0056A0',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  btnStart: {
-    backgroundColor: '#0056A0',
-  },
-  btnStop: {
-    backgroundColor: '#D32F2F',
-  },
   buttonText: {
-    color: '#FFF',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  }
+  },
+  successCard: {
+    backgroundColor: '#E8F5E9',
+    padding: 30,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    marginBottom: 15,
+  },
+  successText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 10,
+  },
+  timeText: {
+    fontSize: 16,
+    color: '#388E3C',
+    marginBottom: 5,
+  },
+  codeText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 10,
+    fontFamily: 'monospace',
+  },
 });
